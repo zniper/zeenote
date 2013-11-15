@@ -1,0 +1,523 @@
+{% extends "base.html" %}
+{% load i18n %}
+{% load tags %}
+{% block content %}
+
+<script type="text/javascript">
+
+    var current_note_id = '';
+    var is_Share = '';
+    var link_Share= '';
+    var bookmark_append = "{% bookmark_append_note note_id='what3ver' %}";
+    var note_content = "";
+
+    var command_flag = 1
+    var search_flag = 0;
+    var form2 = document.getElementById("show-all");
+
+    var tagsOfCurrentNote = new Array();
+
+    $(document).ready(function () {
+        $('a#compose-note').click(function () {
+            composeNote();
+        });      
+        
+        $('a#btn-trash').click(function () {
+            loadTrash();
+            clear_note();
+            command_flag = 0
+            showListCommand(command_flag);
+        });
+
+        $('a#btn-notes').click(function () {
+            reloadLists()
+            clear_note();
+            current_note_id = ""
+            search_flag = 0
+            command_flag = 1
+            showListCommand(command_flag);
+	    $("#show-all").css({
+                        "visibility":"hidden"
+		});
+            $("#nc-add-tag").css({
+                        "visibility":"hidden"
+		});
+            $("#nc-share-status").css({
+                        "visibility":"hidden"
+		        });
+        });
+
+
+	$('a#show-all').click(function () {
+            reloadLists()
+            clear_note();
+            current_note_id = ""
+            search_flag = 0
+            command_flag = 1
+            showListCommand(command_flag);
+	    $("#show-all").css({
+                        "visibility":"hidden"
+		});
+            $("#nc-add-tag").css({
+                        "visibility":"hidden"
+		});
+            $("#nc-share-status").css({
+                        "visibility":"hidden"
+		        });
+        });
+        $('.notelist-item').click(function() {
+            selectNote($(this));
+        });
+        $('.shared-item').click(function() {
+            selectNote($(this));
+        });
+        $('a#tagslist-item').click(function() {
+            var nameTag = this.text
+            selectTags(nameTag)
+        });
+    });
+
+    function loadTrash(){
+        $("#nc-share-status").css({
+                        "visibility":"hidden"
+		        });
+        stdajax({
+            data: {action: N_LOAD_TRASH		
+			},
+            type: 'POST',
+            url: '/member/sync/',
+            handler: function (res) {
+                   showNoteList(res.notes);
+                }
+            });
+
+    }
+    function reload(){
+        reloadLists()
+            current_note_id = ""
+            search_flag = 0
+            command_flag = 1
+            showListCommand(command_flag);
+	    $("#show-all").css({
+                        "visibility":"hidden"
+		});
+            $("#nc-add-tag").css({
+                        "visibility":"hidden"
+		});
+            $("#nc-share-status").css({
+                        "visibility":"hidden"
+		        });
+    }
+
+    
+    function loadNote(note_id)
+    {
+        setSI(true);
+        $.ajax({
+            type: 'GET',
+            url: '/member/load/'+note_id,
+            }).done(function (res) {
+                if (res.code == 1) {
+                    $('#title-area span').html(res.title);
+                    $('#note-title-input').val(res.title);
+                    $('#note-content').val(res.content);
+                    note_content = res.content
+                    var bmlink = bookmark_append.replace('what3ver', note_id);
+                    $('a#bookmark-append').attr('href', bmlink);
+                    setSI(false);
+		    link_Share = res.linkShare
+		    is_Share = res.isShare
+                    loadTagsInView(res.listTag)
+                    tagsOfCurrentNote = res.listTag 
+                    search_flag = 1
+                    if (command_flag == 1){
+                            if (is_Share == '0'){
+                                document.getElementById("nc-share-status").innerHTML = "Share"
+                                $("#nc-share-status").css({
+                                "visibility":"visible"
+		                });
+                                activeShare(1)
+                            }else{
+                                document.getElementById("nc-share-status").innerHTML = "Don't Share"
+                                $("#nc-share-status").css({
+                                "visibility":"visible"
+		                });
+                                activeShare(2)
+                            }
+                            $("#nc-add-tag").css({
+                                        "visibility":"visible"
+		                });
+                    }
+                }
+            });
+    }
+
+    function selectTags(item)
+    {    
+        stdajax({
+            data: {action: N_LOAD_LIST_BY_TAG ,
+		'tag_name':item,		
+			},
+            type: 'POST',
+            url: '/member/sync/',
+            handler: function (res) {
+                   showNoteList(res.notes);
+                }
+            });
+        command_flag = 1
+        showListCommand(command_flag);
+        search_flag = 1;
+	$("#show-all").css({
+                        "visibility":"visible"
+		});
+        $("#nc-add-tag").css({
+                        "visibility":"hidden"
+		});
+        $("#nc-share-status").css({
+                        "visibility":"hidden"
+		        });
+    }
+
+    
+    // please transfer item as $()
+    function selectNote(item) 
+    {
+        setSI(true);
+        // load the content
+        nid = extractNoteId(item.attr('id'));
+        // find and select the right note on list
+        if (current_note_id != ""){
+             $('li#notelist-item-'+current_note_id).removeClass('active');      
+        }
+        current_note_id = nid;
+        // reload the list
+	if (search_flag == 0 && command_flag == 1){
+	   reloadLists();
+	}
+        
+        $('li#notelist-item-'+current_note_id).addClass('active');
+        loadNote(nid);
+    }
+
+    /* 
+     * Return the note id (as number)
+     */
+    function extractNoteId(node_id)
+    {
+        return node_id.substring(node_id.lastIndexOf('-')+1, 
+                                 node_id.length);
+    }
+
+    /* 
+     * (re)show the note list on the left side bar
+     */
+    function showNoteList(notes)
+    {
+        
+        list_root = $('ul.nav-list');
+        cur_nodes = $('ul.nav-list li.notelist-item');
+        list_root.empty();
+        for (var i=0; i<notes.length; i++) {
+            
+            sample_item = '<li id="notelist-item-" class="notelist-item"><a href="#"></a><p class="dateTimeNote" id="short_des-'+notes[i][0].toString()+'"></p></li>';
+            list_root.append(sample_item);
+            new_item = list_root.find('li#notelist-item-');
+            new_id = 'notelist-item-'+ notes[i][0].toString();
+            new_item.attr('id', new_id);
+            new_item.find('a').text(notes[i][1]);
+	    new_item.find('p').text(notes[i][2]);
+
+            if (notes[i][4] =='3'){
+                var nameID = "short_des-"+notes[i][0].toString();
+                document.getElementById(nameID).removeAttribute("class");
+                var mystring = document.getElementById(nameID).innerHTML;
+                var n = mystring.replace(notes[i][3],"<b>"+notes[i][3].toString()+"</b>")
+                document.getElementById(nameID).innerHTML=n
+            }
+        }
+        $('li.notelist-item').click(function() {
+            selectNote($(this));
+        });
+        $('li#notelist-item-'+current_note_id).addClass('active');   
+    }
+
+    function showListCommand(type){
+        list_root = $('#nc-right');
+        sample_item = "";
+        if (type == 1){
+            list_root.empty()
+            list_root.attr("alt","Append It");            
+            sample_item += '<button onclick="printPage();" class="btn">Print</button> '
+            sample_item += '<button id="nc-trash" href="#" class="btn">Trash</button>  '
+            sample_item += '<div class="btn-group" style="float:right;margin-left:3px;">'      
+            sample_item += '<button class="btn btn-primary dropdown-toggle" data-toggle="dropdown" href="#">Share this <span class="caret"></span></button>'
+            sample_item += '<ul id="shareGroup" class="dropdown-menu" style="left:-70px;">'
+            sample_item += '<li><a id="nc-share" href="#">Send link to Friends</a></li>'
+            sample_item += '<li class="divider"></li>'
+            sample_item += '<li><a  id="nc-shareFacebook" href="#"><img src="/static/img/icon/facebook_icon_64.png" width="16px"> Faccebook</a></li>'
+            sample_item += '<li><a id="nc-shareTweet" href="#"><img src="/static/img/icon/twitter_icon_64.png" width="16px"> Twitter</a></li>'
+            sample_item += '</ul></div></div>'
+
+            list_root.append(sample_item);
+            $('#nc-trash').click(function() {
+                trashCurrentNote();
+            });
+
+            $('#nc-share').click(function() {
+                showLinkShare();
+            });
+            $('#nc-shareFacebook').click(function() {
+		if (is_Share == '1'){
+			url = "http://www.facebook.com/sharer.php?u="+link_Share
+			var win=window.open(url, '_blank');
+	  		win.focus();
+			
+		}
+		else if(is_Share == '0'){
+		
+		}
+		else{
+		alert("Please choose a note to share")
+		}
+                
+            });
+	    $('#nc-shareTweet').click(function() {
+		if (is_Share == '1'){
+			url = "http://twitter.com/share?"+"text="+"Follow%20link%20to%20view%20note "+"&url="+link_Share
+			var win=window.open(url, '_blank');
+  			win.focus();	
+		}
+		else if(is_Share == '0'){
+		}
+		else{
+		alert("You must chose a note to share!!")
+		}
+                
+            });
+                
+                
+        }else{ 
+            list_root.empty()
+            list_root.attr("alt","Append It");
+            sample_item = '<button id="nc-remove" href="#" class="btn">Remove</button>  '
+            list_root.append(sample_item);
+            sample_item = '<button id="nc-restore" href="#" class="btn">Restore</button>'
+            list_root.append(sample_item);
+            $('#nc-remove').click(function() {
+                removeCurrentNote();
+            });
+            $('#nc-restore').click(function() {
+                restoreCurrentNote();
+            });
+        }
+    }
+
+    /* 
+     * (re)show the note list on the left side bar
+     */
+    function showTagList(tags)
+    {
+        
+        list_root = $('ul.tag-list');
+        list_root.empty()
+        for (var i=0; i<tags.length; i++) {
+            sample_item = '<li><a id="tagslist-item-'+i.toString()+'" class="tagslist-item" href="#"></a></li> '      
+            list_root.append(sample_item);
+            var nameID = "tagslist-item-"+i.toString();
+            document.getElementById(nameID).innerHTML= tags[i][0] 
+        }
+        $('a.tagslist-item').click(function() {
+            var nameTag = this.text
+            selectTags(nameTag)
+            
+        });
+    }
+        
+
+    /* 
+     * (re)show the note list on the left side bar
+     */
+    function showShareList(snotes)
+    {
+        sample_item = '<li id="si-" class="shared-item"><a href="#"></a></li>';
+        list_root = $('ul#share-list');
+        cur_nodes = $('ul#share-list li.shared-item');
+        list_root.empty();
+        for (var i=0; i<snotes.length; i++) {
+            list_root.append(sample_item);
+            new_item = list_root.find('li#si-');
+            new_id = 'si-'+ snotes[i][0].toString();
+            new_item.attr('id', new_id);
+            new_item.find('a').text(snotes[i][1]);
+        }
+        $('li.shared-item').click(function() {
+            selectNote($(this));
+        });
+        $('li#si-'+current_note_id).addClass('active');
+    }
+
+    /*
+     * Reload the list of tags in Note View 
+     */
+    function loadTagsInView(tags)
+    {
+        list_root = $('#tags-area');
+        list_root.empty();
+         
+        for (var i=0; i<tags.length; i++) {
+            sample_item = '<span name ="2" style="padding:1px 5px;font-size:0.8em;display:inline-block;background:#fff;color:#999;border-radius:4px">'+tags[i]+'<a id="removeTag" value="'+i+'" onclick ="onBtnRemoveTagClicked(this)">[x]</a></span>   '
+            list_root.append(sample_item);    
+        }
+        sample_item = '<span style="padding:1px 5px;font-size:0.8em;display:inline-block;background:#fff;color:#999;border-radius:4px"><a href="#" onclick="addTag();">Add</a></span>   '
+        list_root.append(sample_item);
+        
+    }
+    
+        function onBtnRemoveTagClicked(element){
+                removeTag(element.getAttribute("value"))
+        }
+            
+    function removeTag(index){
+        
+        s_data = {'action':N_REMOVE_TAG,
+                          'tag_remove':tagsOfCurrentNote[index],
+                          'note_id':current_note_id
+                          }
+                params = {'data':s_data, 
+                                  'url':'/member/sync',
+                                  'type':'POST',
+                                  'handler':function (res) {
+                                        loadTagsInView(res.listTag)
+                                        showTagList(res.all_tags)
+                                  },};
+        stdajax(params);
+        
+    }
+    
+
+    /*
+     * Reload the list of notes (left side bar)
+     */
+    function reloadLists()
+    {
+        stdajax({
+            data:{action:N_LOAD_LIST},
+            type:'POST',
+            url:'/member/sync/',
+            handler:function (res) {
+                showNoteList(res.notes);
+                showShareList(res.snotes);
+                showTagList(res.tags)
+            },
+            });
+    }
+
+    /* 
+     * Create new note inside the current view
+     */
+    function composeNote()
+    {
+        stdajax({
+            data: {action: N_CREATE},
+            type: 'POST',
+            url: '/member/sync/',
+            handler: function (res) {
+                    current_note_id = res.new_id;
+                    search_flag = 0
+                    command_flag = 1
+                    showListCommand(command_flag);
+                    $("#show-all").css({
+                        "visibility":"hidden"
+		    });
+                    reloadLists();
+
+                    loadNote(current_note_id);
+                }
+            });
+    }
+
+</script>
+<div class="container-fluid member-container">
+    <div class="row-fluid">
+        <div class="span2">
+            &nbsp;
+        </div>
+        <div class="span3" style="margin-left:1.564%">
+                    <input type="text" id="search-id">
+                    <span class="button_search">
+                        <button id="nc-search" class="btn btn-primary">Search</button>
+                    </span>
+        </div>
+        <div class="span7" style="margin: 10px 0 0 15px">
+                Drag these buttons to Bookmark Toolbar 
+                <a id="bookmark-save" href="{% bookmark_new_note %}" onClick="showDragMe();">
+                    <img alt="Save It" src="/static/img/bookmark-save.png">
+                </a>
+                <a id="bookmark-append" href="" onClick="showDragMe();"><img alt="Combine It" id="nc-bookmark" src="/static/img/bookmark-combine.png">
+                    <img id="status-save" src="/static/img/icon-save.png">
+                </a>        
+        </div>
+    </div>
+</div>
+
+<div class="container-fluid member-container">
+    <div class="row-fluid">
+        <!-- vietth -->
+        <div id="col1-sidebar" class="span2 hidden-phone">
+            <!-- This is place of notebook list 
+            <div id="sb-header">
+              <h5><img src="/static/img/icon/arrow-right.png" width="16px"> Notebook</h5>
+            </div>
+            <ul>
+                <li>Django</li>
+                <li>Android</li>
+                <li>Windows Phone</li>
+            </ul>
+            -->
+            <div id="sb-header">
+                <h5><img src="/static/img/icon/arrow-right.png" width="16px"> <a id="btn-notes" href="#">Notes</a></h5>
+            </div>
+            <div id="sb-header">
+                <h5><img src="/static/img/icon/arrow-right.png" width="16px"> Tag</h5>
+            </div>
+                {% list_tags %}
+            <!-- This is place of tag list -->
+            <div id="sb-header">
+                <h5><img src="/static/img/icon/arrow-right.png" width="16px"> <a id="btn-trash" href="#">Trash</a></h5>
+            </div>
+        </div>
+        <!-- end vietth -->
+        <div id="col2-sidebar" class="span3">
+	    
+            <div id="sb-header">
+              <div class="left">
+                <a id="compose-note" href="#">
+                    New note
+                </a>
+		<!--<a id="show-all" href="#" >
+                    Show all
+                </a>-->
+
+              </div>
+              <div class="right">    
+                    <a href="#" onclick="reload()"><i class="icon-repeat"></i></a>
+              </div>
+            </div>
+            <div id="sidebar-notelist" class="side-notelist">
+                {% list_my_notes %}
+            </div>
+        </div>
+        <div id="member-content" class="span7">
+            {% block member-content %}
+	    
+            {% endblock %}
+        </div>
+        <!--
+        <div id="share-content" class="span2">
+            <h5>Your shared notes:</h5>
+            {% list_shared_notes %}
+        </div>
+    -->
+    </div>
+</div>
+{% endblock %}

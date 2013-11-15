@@ -1,0 +1,15 @@
+{% extends "member/base_member.html" %}
+{% load i18n %}
+
+{% block member-content %}
+<div id="create-note">
+    <form method="POST" action="/member/note">
+      {% csrf_token %}
+      {{ form.as_p }}
+    
+      <input type="submit" value="Save" />
+      <input type="reset" value="Cancel" />
+      <input type="hidden" name="next" value="{{ next }}" />
+    </form>
+</div>
+{% endblock %}

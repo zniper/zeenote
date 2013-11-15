@@ -1,0 +1,14 @@
+<ul id="share-list" class="nav">
+{% for item in all_notes %}    
+    {% if item.id == current_note_id %}
+    <li id="si-{{ item.id }}" class="shared-item">
+        <a href="#">{{ item.title }}</a>
+    </li>
+    {% else %}
+    <li id="si-{{ item.id }}" class="shared-item">
+        <a href="#">{{ item.title }}</a>
+    </li>
+    {% endif %}
+{% endfor %}
+</ul>
+

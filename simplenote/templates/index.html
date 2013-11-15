@@ -1,0 +1,157 @@
+{% extends "base.html" %}
+{% load i18n %}
+{% block script %}
+<script type="text/javascript">
+    $(document).ready(function() {
+        $('#register-zeenote').click(function(){
+        document.location = '/accounts/register/';
+        });
+    $('#myCarousel').carousel({
+        interval: 5000
+        })
+    }); 
+</script>
+{% endblock %}
+{% block content %}
+<!-- vietth -->
+            <div class="bs-docs-example">
+              <div id="myCarousel" class="carousel slide">
+                <ol class="carousel-indicators">
+                  <li data-target="#myCarousel" data-slide-to="0" class=""></li>
+                  <li data-target="#myCarousel" data-slide-to="1" class=""></li>
+                  <li data-target="#myCarousel" data-slide-to="2" class="active"></li>
+                </ol>
+                <div class="carousel-inner">
+                  <div class="item">
+                    <img src="static/img/stories/slideshow_1.png" alt="">
+
+                  </div>
+                  <div class="item">
+                    <img src="static/img/stories/slideshow_1.png" alt="">
+
+                  </div>
+                  <div class="item active">
+                    <img src="static/img/stories/slideshow_1.png" alt="">
+
+                  </div>
+                </div>
+                <a class="left carousel-control" href="#myCarousel" data-slide="prev">‹</a>
+                <a class="right carousel-control" href="#myCarousel" data-slide="next">›</a>
+              </div>
+            </div>              
+                    
+    <!-- end slideshow -->
+    <!-- 
+    <div class="banner_home">
+        <div class="slogan">
+            <p>Quick save everything with one-click!</p>
+        </div>
+        <div class="banner_img">
+            <img src="static/img/feature_1.png" alt="" class="feature_img">
+            <img src="static/img/feature_2.png" alt="" class="feature_img">
+            <img src="static/img/feature_3.png" alt="" class="feature_img">
+        </div>
+    </div>-->
+    <div class="button_start">
+        {% if user.is_authenticated %}
+        <div>&nbsp;<br/><br/></div>
+        {% else %}
+        <button id="register-zeenote" type="button" class="btn btn-primary">Start Your Zeenote</button>
+        {% endif %}
+    </div>
+    <div id="middle_content" style="height:80px">
+        <!--<span class="img_product_intro">
+            <a href="#" onClick="javascript:alert('Cái này chưa phát hành');return false;"><img src="" width="90px" height="90px" ></a>
+        </span>
+        <span class="img_product_intro">
+            <a href="#" onClick="javascript:alert('Cái này cũng thế');return false;"><img src="" width="90px" height="90px" ></a>
+        </span>
+        <span class="img_product_intro">
+           <a href="#" onClick="javascript:alert('Cái này để demo');return false;"><img src="" width="90px" height="90px" ></a>
+        </span>-->
+    </div>
+    
+    <div class="main_feature">
+    <div class="row-fluid">
+        <ul class="thumbnails">
+            <li class="span4">
+                <div class="thumbnail">
+                    <img alt="300x200" data-src="holder.js/300x200" style="width: 300px; height: 200px;border: 1px solid #ddd" src="static/img/content/feature_1.png">
+                    <div class="caption">
+                        <h3>Quick save</h3>
+                        <p>Quick save an article, a quote or simply a status of someone you noticed. Just one click. Done!</p><br/>
+                        <p><a class="btn btn-primary" href="#">Readmore</a></p>
+                    </div>
+                </div>
+            </li>
+            <li class="span4">
+                <div class="thumbnail">
+                    <img alt="300x200" data-src="holder.js/300x200" style="width: 300px; height: 200px;border: 1px solid #ddd" src="static/img/content/feature_1.png">
+                    <div class="caption">
+                        <h3>Combine</h3>
+                        <p>Store note just with what you need. Just mark what you want and click combine.</p><br/>
+                        <p><a class="btn btn-primary" href="#">Readmore</a></p>
+                    </div>
+                </div>
+            </li>
+            <li class="span4">
+                <div class="thumbnail">
+                    <img alt="300x200" data-src="holder.js/300x200" style="width: 300px; height: 200px;border: 1px solid #ddd" src="static/img/content/feature_2.png">
+                    <div class="caption">
+                        <h3>Friend share</h3>
+                        <p>Share what you save to friends through social networks or direct link to note.</p><br/>
+                        <p><a class="btn btn-primary" href="#">Readmore</a></p>
+                    </div>
+                </div>
+            </li>
+        </ul>
+        </div>
+        </div>
+<!-- end vietth -->
+
+
+    <!--
+        <div id="home-intro">
+        <p>
+            <img src="/static/img/home.png">
+        </p>
+        <button id="register-zeenote" type="button" class="btn btn-primary">Start Your Zeenote</button>
+    </div>
+    <div id="welcome-pane" class="hero-unit">
+    
+        <h2>zeenote says hi! :-)</h2>
+        <p>This is the preview version of Zeenote. Please do not be shocked by its monotony or some unexpected errors.</p>
+        <p>zeenote is very simple. How to get started?</p>
+    </div>
+
+    <div id="start-guide" class="row">
+        <div class="span3">
+            <div>
+                <h3>Create your account</h3>
+                <p><a id="register" class="btn btn-primary btn-large" style="margin: 1.6em 0em">Register &raquo;</a></p>
+                <p class="description">Please activate your account right after registration completed</p>
+            </div>
+        </div> 
+        <div class="span3">
+            <div>
+                <h3>Make bookmark </h3>
+                <p><img src="/static/img/guide-2.png"></p>
+                <p class="description">Drag the book icon in your member page onto the bookmark toolbar</p>
+            </div>
+        </div>
+        <div class="span3">
+            <div>
+                <h3>Save wanted content</h3>
+                <p><img src="/static/img/guide-3.png"></p>
+                <p class="description">Select any text you want, and click the Save It on bookmark toolbar</p>
+            </div>
+        </div>
+        <div class="span3">
+            <div>
+                <h3>Review and edit </h3>
+                <p><img src="/static/img/guide-4.png"></p>
+                <p class="description">Go back to your member space in zeenote to review and edit saved notes</p>
+            </div>
+        </div>
+    </div-->
+{% endblock %}

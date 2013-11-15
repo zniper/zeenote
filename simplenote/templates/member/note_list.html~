@@ -1,0 +1,21 @@
+<ul class="nav nav-list">
+{% load tz %}
+{% localtime on %}
+
+{% for item in all_notes %}    
+    {% if item.id == current_note_id %}
+    <li id="notelist-item-{{ item.id }}" class="active notelist-item">
+        <a href="#">{{ item.title }}</a>
+	<p class="dateTimeNote"> {{ he }}</p>
+    </li>
+    {% else %}
+    <li id="notelist-item-{{ item.id }}" class="notelist-item">
+        <a href="#">{{ item.title }} </a>
+	<p class="dateTimeNote"> {{ item.created }} </p>
+    </li>
+    {% endif %}
+{% endfor %}
+
+{% endlocaltime %}
+</ul>
+

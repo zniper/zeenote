@@ -1,0 +1,562 @@
+{% extends "member/base_member.html" %}
+{% load i18n %}
+
+{% block member-content %}
+
+<script type="text/javascript">    
+
+    // variables for syncing note content
+    var syncWait = 0;
+    var syncId = -1;
+    var savedContent = '';
+    var submitContent = '';
+
+    
+    function printPage() {
+         top.wRef=window.open('','myconsole',
+          'width=500,height=450,left=10,top=10'
+           +',menubar=1'
+           +',toolbar=0'
+           +',status=1'
+           +',channelmode=1'
+           +',scrollbars=1'
+           +',resizable=1')
+         top.wRef.document.writeln(
+          '<html><head><title>ZEENOTE</title></head>'
+         +'<body bgcolor=white onLoad="self.focus()">'
+         +'<right> <a href=# onclick="window.print();return false;"><img src="/static/img/icon/save_icon.png" width="16px"></a>'
+         )
+
+         buf='';
+         buf +='<div><h1>'+document.getElementById("note-header-title").innerHTML+'</h1></div>'
+         buf +='<div><p style="font-size: 13px;line-height: 18px;">'+document.getElementById('note-content').value+'</p></div>'
+
+         top.wRef.document.writeln(buf+'</center></body></html>')
+         top.wRef.document.close()
+
+    }
+
+
+    $(document).ready(function() {       
+        $('#title-area').click(function(){
+                var title_node = $('#title-area span');
+                tInput = $('#note-title-input');
+                tInput.val(title_node.text());
+                tInput.show();
+                tInput.focus();
+                title_node.hide();
+            });
+
+        $('#note-title-input').focusout(function() {
+                //updateTitle();
+                $('#title-area span').show();
+                $('#note-title-input').hide();
+            });
+
+        $('#note-title-input').keyup(function(event) {
+                if (event.which == 13) {
+                    
+                    updateTitle();
+                }
+            });
+
+        $('#nc-trash').click(function() {
+                trashCurrentNote();
+            });
+
+        $('#nc-share').click(function() {
+                showLinkShare();
+            });
+        $('#nc-share-status').click(function() {
+                shareThis();
+            });
+        $('#nc-remove').click(function() {
+                removeCurrentNote();
+            });
+        $('#nc-restore').click(function() {
+                restoreCurrentNote();
+            });
+	$('#nc-shareFacebook').click(function() {
+		if (is_Share == '1'){
+			url = "http://www.facebook.com/sharer.php?u="+link_Share
+			var win=window.open(url, '_blank');
+	  		win.focus();
+			
+		}
+		else if(is_Share == '0'){
+		
+		}
+		else{
+		alert("Please choose a note to share")
+		}
+                
+            });
+	$('#nc-shareTweet').click(function() {
+		if (is_Share == '1'){
+			url = "http://twitter.com/share?"+"text="+"Follow%20link%20to%20view%20note "+"&url="+link_Share
+			var win=window.open(url, '_blank');
+  			win.focus();	
+		}
+		else if(is_Share == '0'){
+		}
+		else{
+		alert("You must chose a note to share!!")
+		}
+                
+            });
+	$('#nc-search').click(function() {      
+                search_note();
+            });
+
+
+    
+        $('a#button-add-tag').click(function(){
+        tag = $('#tag-id').val()
+        var list = tag.split(",")
+        tag = ""
+        for (var i = 0; i < list.length; i++) {   
+            if (trim(list[i]) == ""){
+            }
+            else{
+                tag += trim(list[i])+ "," 
+            }
+        }
+        tag = tag.slice(0,tag.length-1)
+        
+        if ((tag.split(",").length + tagsOfCurrentNote.length) > 5){
+                alert("Each note can containts 5 tags")
+        }
+        else if (tagsOfCurrentNote.indexOf(tag) == -1){
+                if (tag == ""){ 
+                    $('#modal-addTag').modal("hide")            
+                }else{
+                        alert('You have been add: '+tag)
+                        s_data = {'action':N_ADD_TAG,
+                                  'tags':tag,
+                                  'note_id':current_note_id
+                                  }
+                        params = {'data':s_data, 
+                                          'url':'/member/sync',
+                                          'type':'POST',
+                                          'handler':function (res) {
+                                                showTagList(res.tag)
+                                                //document.getElementById("status-add").innerHTML= "Add Tag Successfull !!!"
+                                                addNewTagInList(tag)
+                                                loadTagsInView(tagsOfCurrentNote)
+                                                $('#modal-addTag').modal("hide")
+                                          },};
+                                stdajax(params);
+                }
+        }else{
+            alert("This tag exist")    
+        }
+    });
+    
+    
+        // re-assign
+        current_note_id = '{{ note.id }}';
+
+        $('#note-content').keypress(function() {                 
+                syncWait = 4;
+                startSyncNote();
+            });
+
+    });
+
+    function addNewTagInList(newTags){
+        var list = newTags.split(",")
+        for (var i = 0; i < list.length; i++) {
+            tagsOfCurrentNote.push(list[i])
+        }
+    } 
+    function trim(str, chars) {
+        return ltrim(rtrim(str, chars), chars);
+    }
+ 
+    function ltrim(str, chars) {
+        chars = chars || "\\s";
+        return str.replace(new RegExp("^[" + chars + "]+", "g"), "");
+    }
+
+    function rtrim(str, chars) {
+        chars = chars || "\\s";
+        return str.replace(new RegExp("[" + chars + "]+$", "g"), "");
+    }
+
+
+    function updateTitle() {
+        var title_node = $('#title-area span');
+        var title_input = $('#note-title-input');
+        s_data = {'action':N_SYNC_TITLE,
+                  'note_title':title_input.val(),
+                  'note_id':current_note_id,};
+        params = {'data':s_data, 
+                  'url':'/member/sync',
+                  'type':'POST',
+                  'handler':function (res) {
+                        if (res.code == 1) {
+                            var new_title = $('#note-title-input').val();
+                            $('#note-header-title').html(new_title);
+                            updateNoteInList(current_note_id, new_title);
+                        }
+                  },};
+        stdajax(params);
+        title_node.show();
+        title_input.hide();
+    }
+
+
+    /*
+     * Send command to delete the current note
+     */
+    function trashCurrentNote()
+    {
+        setSI(true);
+        if (current_note_id == null)
+            return;
+        params = {'action':N_TRASH,
+                  'note_id':current_note_id,
+                  };
+        stdajax({'data':params,
+                 'url':'/member/sync',
+                 'type':'POST',
+                 'handler':function (res) {
+                        if (res.code == '1') {
+                            cur_item = $('li#notelist-item-'+current_note_id);
+                            sel_item = cur_item.prev();
+                            sel_item = (sel_item.length==0)?cur_item.next():sel_item;
+                            $('li#notelist-item-'+current_note_id).remove();
+                            if (!sel_item.attr('id')){clear_note();showTagList("")}
+                            else{
+                            selectNote(sel_item);
+                            showTagList(res.tags)}
+                        }
+                    },
+                 });
+    }
+
+    function removeCurrentNote()
+    {
+        setSI(true);
+        if (current_note_id == null)
+            return;
+        params = {'action':N_DELETE,
+                  'note_id':current_note_id,
+                  };
+        stdajax({'data':params,
+                 'url':'/member/sync',
+                 'type':'POST',
+                 'handler':function (res) {
+                        if (res.code == '1') {
+                            cur_item = $('li#notelist-item-'+current_note_id);
+                            sel_item = cur_item.prev();
+                            sel_item = (sel_item.length==0)?cur_item.next():sel_item;
+                            $('li#notelist-item-'+current_note_id).remove();
+                            selectNote(sel_item);
+                        }
+                    },
+                 });
+    }
+
+
+    function restoreCurrentNote()
+    {
+        setSI(true);
+        if (current_note_id == null)
+            return;
+        params = {'action':N_RESTORE,
+                  'note_id':current_note_id,
+                  };
+        stdajax({'data':params,
+                 'url':'/member/sync',
+                 'type':'POST',
+                 'handler':function (res) {
+                        if (res.code == '1') {
+                            cur_item = $('li#notelist-item-'+current_note_id);
+                            sel_item = cur_item.prev();
+                            sel_item = (sel_item.length==0)?cur_item.next():sel_item;
+                            $('li#notelist-item-'+current_note_id).remove();
+                            selectNote(sel_item);
+                        }
+                    },
+                 });
+    }
+
+    // update the note title in the left navigation bar
+    function updateNoteInList(note_id, title) {
+        item = $('li#notelist-item-'+note_id+' a')[0];
+        item.textContent = title;
+    }
+
+    function startSyncNote() 
+    {
+        if (syncId == -1) {
+            syncId = setInterval('syncNoteContent();', 500);
+        }
+    }
+
+    function syncNoteContent() {
+        if (syncWait > 0) {
+            syncWait = syncWait - 1;
+            return;
+        }
+        // time over, start saving...
+        clearInterval(syncId); syncId = -1;
+        setSI(true);        
+        // is there really a change?
+        submitContent = $('#note-content').val(); 
+        if (submitContent == savedContent) {
+            return;
+        }
+        var data = {'action':N_SYNC_CONTENT};
+        data.note_content = submitContent;      
+        data.note_id = current_note_id;
+        $.post('/member/sync/',
+               data,
+               function (res) {
+                    // if there is changes while synchronizing, 
+                    // continue on the next round
+                    if (syncWait > 0) {
+                        startSyncNote();
+                    }
+                    setSI(false);
+                    // if succeeded, show the saved icon
+                    if (res['code'] == 1) {
+                        $('img#status-save').fadeIn();
+                        setTimeout(function(){$('img#status-save').fadeOut();}, 1000);
+                        savedContent = submitContent;
+                    }
+               },
+               'json'
+               );
+    }
+
+    function setSI(onSync) 
+    {
+        if (onSync) {
+            $('img#nc-sync').show();
+            setTimeout(function(){$('img#nc-sync').hide();}, 5000);
+        } else {
+            $('img#nc-sync').fadeOut();
+        }
+    }
+
+
+    function showDragMe() {
+        alert('Please drag this to the Bookmark Bar above');
+    }
+	function showDragMeCB() {
+        alert('Please sure you have chosen a note before drag this button');
+    }
+    function addTag(){
+        if (tagsOfCurrentNote.length > 5){
+            alert("Each note can contain 5 tags!!!")
+        }else{
+            $('#tag-id').val("");
+	    $('#modal-addTag').modal('show');
+        }
+    }	
+    function showLinkShare() {
+        if (is_Share == '1'){
+            inputShare = $('#share-id');
+            inputShare.val(link_Share);
+            $('#modal-share').modal('show');
+        }
+    }
+
+        function activeShare(type){
+            if (type==1){
+                $('ul#shareGroup > li').attr("class","disabled");
+            }else{
+                $('ul#shareGroup > li').removeAttr("class");
+            }
+
+        }
+       function shareThis() {
+
+	if (is_Share == '1'){   
+            is_Share = 0;
+            s_data = {'action':N_DONT_SHARE,
+                  'note_id':current_note_id
+                  };
+	    params = {'data':s_data, 
+                          'url':'/member/sync',
+                          'type':'POST',
+                          'handler':function (res) {
+                                if (res.success) {
+			 	    is_Share = '0'
+				    document.getElementById("nc-share-status").innerHTML = "Share"
+                                    activeShare(1)
+                                }
+
+                          },};
+                stdajax(params);
+
+
+	}else{
+
+            s_data = {'action':N_SHARE,
+                          'note_id':current_note_id
+                          };
+                params = {'data':s_data, 
+                          'url':'/member/sync',
+                          'type':'POST',
+                          'handler':function (res) {
+                                if (res.link) {
+				    is_Share = '1'
+                                    link_Share = res.link
+
+				    document.getElementById("nc-share-status").innerHTML = "Dont Share"
+                                    activeShare(2)
+                                }
+                          },};
+                stdajax(params);
+
+        }
+
+    }
+    
+    function clear_note(){
+        $('#note-header-title').html("...");
+        $('#note-content').val(" ");
+    }
+
+    function search_note() {
+        var sword = $('input#search-id').val();
+        current_note_id= ""
+        stdajax({
+            data: {action: N_SEARCH ,
+		'search_word':sword,		
+			},
+            type: 'POST',
+            url: '/member/sync/',
+            handler: function (res) {
+                    showNoteList(res.notes);
+                }
+            });
+        command_flag = 1
+        showListCommand(command_flag);
+        search_flag = 1;
+	$("#show-all").css({
+                        "visibility":"visible"
+		});
+	$("#nc-share-status").css({
+                        "visibility":"hidden"
+		        });
+	
+    }
+
+    $(document).ajaxSend(function(event, xhr, settings) {
+        function getCookie(name) {
+            var cookieValue = null;
+            if (document.cookie && document.cookie != '') {
+                var cookies = document.cookie.split(';');
+                for (var i = 0; i < cookies.length; i++) {
+                    var cookie = jQuery.trim(cookies[i]);
+                    // Does this cookie string begin with the name we want?
+                    if (cookie.substring(0, name.length + 1) == (name + '=')) {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
+                    }
+                }
+            }
+            return cookieValue;
+        }
+        function sameOrigin(url) {
+            // url could be relative or scheme relative or absolute
+            var host = document.location.host; // host + port
+            var protocol = document.location.protocol;
+            var sr_origin = '//' + host;
+            var origin = protocol + sr_origin;
+            // Allow absolute or scheme relative URLs to same origin
+            return (url == origin || url.slice(0, origin.length + 1) == origin + '/') ||
+                (url == sr_origin || url.slice(0, sr_origin.length + 1) == sr_origin + '/') ||
+                // or any other URL that isn't scheme relative or absolute i.e relative.
+                !(/^(\/\/|http:|https:).*/.test(url));
+        }
+        function safeMethod(method) {
+            return (/^(GET|HEAD|OPTIONS|TRACE)$/.test(method));
+        }
+    
+        if (!safeMethod(settings.type) && sameOrigin(settings.url)) {
+            xhr.setRequestHeader("X-CSRFToken", getCookie('csrftoken'));
+        }
+    });
+
+</script>
+
+<div id="note-layout">
+    <div id="note-header">
+        <div class="note-commands" >
+            <div id="nc-right" alt="Append It">
+                <button onclick="printPage();" class="btn">Print</button>
+                <button id="nc-trash" href="#" class="btn">Trash</button>
+                <div class="btn-group" style="float:right;margin-left:3px;">
+                    <button class="btn btn-primary dropdown-toggle" data-toggle="dropdown" href="#">Share this <span class="caret"></span></button>
+                    <ul id="shareGroup" class="dropdown-menu" style="left:-70px;" >
+                        <li><a id="nc-share" href="#">Send link to Friends</a></li>
+                        '<li class="divider"></li>'
+                        <li><a  id="nc-shareFacebook" href="#"><img src="/static/img/icon/facebook_icon_64.png" width="16px"> Faccebook</a></li>
+                        <li><a id="nc-shareTweet" href="#"><img src="/static/img/icon/twitter_icon_64.png" width="16px"> Twitter</a></li>
+                    </ul>
+                </div>
+                </div>
+                <div id="nc-left">
+                    <button href="#" id="nc-share-status" class="btn">Not Share</button>
+
+
+                </div>
+            
+            <div id="nc-center">
+                <img id="nc-sync" src="/static/img/icon-sync.gif">
+            </div>
+	    
+           
+        </div>
+    </div>
+
+    <div id="single-note-area">
+        <div id="title-area">
+            <span id="note-header-title">{% firstof note.title "..." %}</span>
+            <input id="note-title-input" value="" type="text">
+        </div>
+        <div id="tags-area">
+        </div>
+        <div id="content-area">
+            <textarea id="note-content"></textarea>
+        </div>
+    </div>
+    <div id="modal-share" class="modal hide">
+        <div class="modal-header">
+            <button type="button" class="close" data-dismiss="modal">×</button>
+            <h3>Share note</h3>
+        </div>
+        <div class="modal-body">
+            <p>Link to share</p>
+            <input id="share-id" type="text">
+        </div>
+        <div class="modal-footer">
+            <a href="#" class="btn" data-dismiss="modal">Close</a>
+            
+        </div>
+    </div>
+
+    <div id="modal-addTag" class="modal hide">
+        <div class="modal-header">
+            <button type="button" class="close" data-dismiss="modal">×</button>
+            <h3>Add Tag</h3>
+        </div>
+        <div class="modal-body">
+            <p>Enter Tag :</p>
+            <input id="tag-id" type="text">
+        </div>
+        <div class="modal-footer">
+            <label id="status-add"></label>
+            <a href="#" class="btn" data-dismiss="modal">Close</a>
+            <a id="button-add-tag" href="#" class="btn btn-primary">Add</a>
+        </div>
+    </div>
+
+</div>
+
+{% endblock %}
