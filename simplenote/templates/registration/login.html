@@ -5,14 +5,14 @@
                     <li class="active" value="Popup!"><a href="/member/">My Space</a></li>
                     <li><a href="#" id="button">Feedback to us</a></li>
                     {% else %}
-                    <li class="active"><a href="{% url auth_login %}">Log In</a></li>
+                    <li class="active"><a href="{% url 'auth_login' %}">Log In</a></li>
                     <li><a href="/accounts/register/">Sign Up</a></li>
                     <li><a href="#" id="button">Contact Us</a></li>
                     {% endif %}
                     </ul>
                     <ul class="nav2 nav" style="float:right; margin-right:0px;">
                     {% if user.is_authenticated %}
-                    <li>Hi, {{ user.username }}<button id="logout-button" class="btn" href="{% url auth_logout %}">Log Out</button></li>
+                    <li>Hi, {{ user.username }}<button id="logout-button" class="btn" href="{% url 'auth_logout' %}">Log Out</button></li>
                     {% else %}
                     {% endif %}
                {% endblock %}     
@@ -24,7 +24,7 @@
         </div>
         <div class="row-fluid">
         <div class="thumbnails">
-        <div class="span6">
+        <!--div class="span6">
             <div class="thumbnail">
                 <div class="content_body">
                     <div class="media">
@@ -60,24 +60,22 @@
 
                 </div>
             </div>
-        </div>
+        </div-->
         
         <div class="span6">
-            <div class="thumbnail">
-                <form method="post" action=".">
-                  {% csrf_token %}
-                  {{ form.as_p }}
+            <form method="post" action=".">
+                {% csrf_token %}
+                {{ form.as_p }}
 
-                  <input class="btn btn-primary" type="submit" value="{% trans 'Log in' %}" />
-                  {% if next %}
-                  <input type="hidden" name="next" value="{{ next }}" />
-                  {% else %}
-                  <input type="hidden" name="next" value="/member/" />
-                  {% endif %}
-                </form>
-                <p>{% trans "Forgot password" %}? <a href="{% url auth_password_reset %}">{% trans "Reset it" %}</a>!</p>
-                <p>{% trans "Not member" %}? <a href="{% url registration_register %}">{% trans "Register" %}</a>!</p>
-            </div>
+                <input class="btn btn-primary" type="submit" value="{% trans 'Log in' %}" />
+                {% if next %}
+                <input type="hidden" name="next" value="{{ next }}" />
+                {% else %}
+                <input type="hidden" name="next" value="/member/" />
+                {% endif %}
+            </form>
+            <p>{% trans "Forgot password" %}? <a href="{% url 'auth_password_reset' %}">{% trans "Reset it" %}</a>!</p>
+            <p>{% trans "Not member" %}? <a href="{% url 'registration_register' %}">{% trans "Register" %}</a>!</p>
         </div>
         
         </div>

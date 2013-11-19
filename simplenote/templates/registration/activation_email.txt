@@ -1,6 +1,11 @@
 {% load i18n %}
-{% trans "Activate account at" %} {{ site.name }}:
+Hello,
 
-http://{{ site.domain }}{% url registration_activate activation_key %}
+{% trans "Please activate your new registered acconut at " %} {{ site.name }}:
 
-{% blocktrans %}Link is valid for {{ expiration_days }} days.{% endblocktrans %}
+http://{{ site.domain }}{% url 'registration_activate' activation_key %}
+
+{% blocktrans %}The above link is valid for {{ expiration_days }} days.{% endblocktrans %}
+
+Thank you,
+Zeenote Supprt

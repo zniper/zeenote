@@ -6,7 +6,7 @@
                     <li><a href="/guide/" id="guide">Guide</a></li>
                     <li><a href="#" id="button">Feedback to us</a></li>
                     {% else %}
-                    <li><a href="{% url auth_login %}">Log In</a></li>
+                    <li><a href="{% url 'auth_login' %}">Log In</a></li>
                     <li class="active"><a href="/accounts/register/">Sign Up</a></li>
                     <li><a href="/about/" id="about">About Us</a></li>
                     <li><a href="/guide/" id="guide">Guide</a></li>
@@ -14,7 +14,7 @@
                     </ul>
                     <ul class="nav2 nav" style="float:right; margin-right:0px;">
                     {% if user.is_authenticated %}
-                    <li>Hi, {{ user.username }}<button id="logout-button" class="btn" href="{% url auth_logout %}">Log Out</button></li>
+                    <li>Hi, {{ user.username }}<button id="logout-button" class="btn" href="{% url 'auth_logout' %}">Log Out</button></li>
                     {% else %}
                     {% endif %}
                {% endblock %}     

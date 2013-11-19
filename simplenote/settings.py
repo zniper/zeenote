@@ -166,8 +166,8 @@ LOGIN_REDIRECT_URL = '/member/'
 #EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
 #EMAIL_HOST = 'localhost'
 # For real deal
-EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
-EMAIL_HOST = 'localhost'
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST = 'smtp.googlemail.com'
 # For real deal
 EMAIL_HOST_USER = 'support@zeenote.net'
 EMAIL_HOST_PASSWORD = ''
